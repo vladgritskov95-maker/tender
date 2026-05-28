@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТендерСкан — Костанай</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Golos+Text:wght@400;500;600&display=swap');
+:root{
+  --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1f2d45;
+  --accent:#00d4ff;--accent2:#7c3aed;--green:#10b981;--red:#ef4444;
+  --yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;
+  --fh:'Unbounded',sans-serif;--fb:'Golos Text',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.04) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:0 24px}
+header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.logo{font-family:var(--fh);font-size:20px;font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo span{color:var(--muted);font-size:12px;display:block;margin-top:2px;
+  font-family:var(--fb);-webkit-text-fill-color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px}
+.panel-title{font-family:var(--fh);font-size:11px;font-weight:700;color:var(--accent);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:18px}
+.url-row{display:flex;gap:10px;margin-bottom:12px}
+.url-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 16px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;transition:border-color .2s}
+.url-input:focus{border-color:var(--accent)}
+.hint{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.7;
+  background:var(--surface2);border-radius:10px;padding:12px 16px;border-left:3px solid var(--accent)}
+.hint code{color:var(--accent);font-size:11px}
+.options-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--muted);
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.field input,.field select{background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--fb);
+  font-size:13px;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:var(--surface2)}
+.check-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);
+  cursor:pointer;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;transition:border-color .2s}
+.check-label:hover{border-color:var(--accent)}
+.check-label input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 24px;border-radius:10px;
+  font-family:var(--fb);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0099cc);color:#000;box-shadow:0 0 20px rgba(0,212,255,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 24px rgba(0,212,255,.5)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-stop{background:var(--surface2);color:var(--red);border:1px solid var(--red)}
+.btn-stop:hover{background:rgba(239,68,68,.1)}
+.btn-stop:disabled{opacity:.3;cursor:not-allowed}
+.btn-excel{background:linear-gradient(135deg,var(--green),#059669);color:#fff;box-shadow:0 0 20px rgba(16,185,129,.3)}
+.btn-excel:hover{transform:translateY(-1px);box-shadow:0 4px 24px rgba(16,185,129,.5)}
+.btn-excel:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.prog-block{display:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 26px;margin-bottom:24px}
+.prog-block.active{display:block}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.prog-label{font-size:13px;font-weight:600;color:var(--accent)}
+.prog-count{font-size:12px;color:var(--muted);font-family:monospace}
+.pbar-wrap{background:var(--surface2);border-radius:100px;height:6px;overflow:hidden;margin-bottom:14px}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px;transition:width .3s;width:0}
+.phases{display:flex;gap:20px;font-size:11px;margin-bottom:14px;flex-wrap:wrap}
+.phase{color:var(--muted);display:flex;align-items:center;gap:5px}
+.phase.active{color:var(--accent);font-weight:600}
+.phase.done{color:var(--green)}
+.logbox{background:#060a12;border:1px solid var(--border);border-radius:10px;padding:12px;
+  max-height:150px;overflow-y:auto;font-size:11px;font-family:'Courier New',monospace;color:var(--muted)}
+.log-ok{color:var(--green)}.log-err{color:var(--red)}.log-info{color:var(--accent)}
+.stats-row{display:none;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.stat-val{font-family:var(--fh);font-size:26px;font-weight:900;line-height:1;margin-bottom:5px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:none}
+.tbl-wrap.active{display:block}
+.tbl-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap}
+.tbl-title{font-family:var(--fh);font-size:13px;font-weight:700}
+.tbl-sub{font-size:11px;color:var(--muted)}
+.tbl-search{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:8px 12px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:220px}
+.tbl-search:focus{border-color:var(--accent)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--surface2);padding:10px 12px;text-align:left;font-size:9px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #0d1624;vertical-align:top;line-height:1.45}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,212,255,.02)}
+.tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:4px;text-transform:uppercase;white-space:nowrap}
+.tg-blue{background:rgba(0,212,255,.15);color:var(--accent)}
+.tg-green{background:rgba(16,185,129,.15);color:var(--green)}
+.tg-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.tg-red{background:rgba(239,68,68,.15);color:var(--red)}
+.c-name{font-weight:600;color:var(--text)}
+.c-sub{color:var(--muted);font-size:11px;margin-top:2px}
+.c-sum{font-weight:700;color:var(--green);white-space:nowrap}
+.c-bin{font-family:monospace;color:var(--accent);letter-spacing:.5px}
+.c-wbin{font-family:monospace;color:var(--yellow);letter-spacing:.5px}
+.spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+a.lnk{color:var(--accent);text-decoration:none;font-size:11px}
+a.lnk:hover{text-decoration:underline}
+.empty{text-align:center;padding:50px;color:var(--muted);font-size:14px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:13px 20px;font-size:13px;transform:translateY(80px);opacity:0;
+  transition:all .3s;z-index:999;max-width:360px;line-height:1.4}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}
+@media(max-width:768px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div class="logo">ТендерСкан
+      <span>Победители тендеров · Костанайская область · 2026</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">MVP v2.0</div>
+  </div>
+</header>
+
+<!-- PANEL -->
+<div class="panel">
+  <div class="panel-title">⚙ Параметры парсинга</div>
+
+  <div class="hint">
+    💡 Вставьте ссылку с фильтрами напрямую с портала. По умолчанию уже вставлена ссылка с нужными фильтрами:<br>
+    Статус: <code>Закупка состоялась</code> + <code>Закупка не состоялась</code> · Регион: <code>Костанайская область</code> · Сумма от: <code>10 000 000 ₸</code> · Год: <code>2026</code>
+  </div>
+
+  <div class="url-row">
+    <input class="url-input" id="inp-url" type="text"
+      value="https://goszakup.gov.kz/ru/search/lots?filter%5Bstatus%5D%5B%5D=360&filter%5Bstatus%5D%5B%5D=325&filter%5Bkato%5D=390000000&filter%5Bamount_from%5D=10000000&filter%5Byear%5D=2026&smb="
+      placeholder="https://goszakup.gov.kz/ru/search/lots?...">
+  </div>
+
+  <div class="options-row">
+    <div class="field">
+      <label>Лимит лотов</label>
+      <input type="number" id="inp-limit" value="200" min="10" max="2000" style="width:130px">
+    </div>
+    <div class="field">
+      <label>Задержка (сек)</label>
+      <input type="number" id="inp-delay" value="1.5" min="0.5" max="10" step="0.5" style="width:130px">
+    </div>
+    <div class="field">
+      <label>Параллельных запросов</label>
+      <select id="inp-concur" style="width:130px">
+        <option value="1">1 (медленно/надёжно)</option>
+        <option value="3" selected>3 (рекомендуется)</option>
+        <option value="5">5 (быстро)</option>
+      </select>
+    </div>
+    <div class="field" style="padding-top:20px">
+      <label class="check-label">
+        <input type="checkbox" id="chk-winners" checked>
+        Загружать победителей
+      </label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="btn-start" onclick="startParsing()">▶ Запустить парсинг</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="stopParsing()" disabled>⏹ Стоп</button>
+    <button class="btn btn-excel" id="btn-excel" onclick="exportExcel()" disabled>⬇ Скачать Excel</button>
+    <span id="upd-time" style="font-size:11px;color:var(--muted);margin-left:4px"></span>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog-block" id="prog-block">
+  <div class="prog-top">
+    <div class="prog-label" id="prog-label">Инициализация...</div>
+    <div class="prog-count" id="prog-count">0</div>
+  </div>
+  <div class="pbar-wrap"><div class="pbar-fill" id="pbar"></div></div>
+  <div class="phases">
+    <div class="phase" id="ph1">📋 Сбор списка лотов</div>
+    <div class="phase" id="ph2">🏆 Загрузка победителей</div>
+    <div class="phase" id="ph3">✅ Готово</div>
+  </div>
+  <div class="logbox" id="logbox"></div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row" id="stats-row">
+  <div class="stat"><div class="stat-val" id="st-lots">0</div><div class="stat-lbl">Лотов собрано</div></div>
+  <div class="stat"><div class="stat-val" id="st-win">0</div><div class="stat-lbl">С победителем</div></div>
+  <div class="stat"><div class="stat-val" id="st-bins">0</div><div class="stat-lbl">Уникальных БИН</div></div>
+  <div class="stat"><div class="stat-val" id="st-sum">0</div><div class="stat-lbl">Млрд тенге</div></div>
+  <div class="stat"><div class="stat-val" id="st-pages">0</div><div class="stat-lbl">Страниц</div></div>
+</div>
+
+<!-- TABLE -->
+<div class="tbl-wrap" id="tbl-wrap">
+  <div class="tbl-head">
+    <div>
+      <div class="tbl-title">Результаты парсинга</div>
+      <div class="tbl-sub" id="tbl-sub">Ожидание запуска...</div>
+    </div>
+    <input class="tbl-search" id="tbl-search" type="text" placeholder="🔍 Поиск по таблице..." oninput="filterTable()">
+  </div>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>#</th>
+        <th>Номер лота</th>
+        <th>Лот / Объявление</th>
+        <th>Заказчик</th>
+        <th>Сумма лота</th>
+        <th>БИН победителя</th>
+        <th>Победитель</th>
+        <th>Сумма договора</th>
+        <th>Статус победителя</th>
+        <th>Способ закупки</th>
+        <th>Статус лота</th>
+        <th>Ссылки</th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="12"><div class="empty">Нажмите «Запустить парсинг»</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div style="height:60px"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let records = [];
+let running = false;
+let stopFlag = false;
+let pagesFetched = 0;
+let winnersLoaded = 0;
+const BASE = 'https://goszakup.gov.kz';
+
+// ── LOG ───────────────────────────────────────────
+function log(msg, cls='') {
+  const box = document.getElementById('logbox');
+  const d = document.createElement('div');
+  if(cls) d.className = cls;
+  d.textContent = '['+new Date().toLocaleTimeString('ru')+'] '+msg;
+  box.appendChild(d);
+  if(box.children.length > 300) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── FETCH ─────────────────────────────────────────
+async function pfetch(url) {
+  const r = await fetch('/proxy?url='+encodeURIComponent(url));
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.text();
+}
+
+function parseDoc(html) {
+  return new DOMParser().parseFromString(html,'text/html');
+}
+
+// ── PARSE LOTS LIST ───────────────────────────────
+function parseLotsList(html) {
+  const doc = parseDoc(html);
+  const items = [];
+  const rows = doc.querySelectorAll('table tbody tr');
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if(cells.length < 5) return;
+    const lotNum = cells[0]?.textContent?.trim();
+    if(!lotNum) return;
+
+    const annA = cells[1]?.querySelector('a');
+    const annName = annA?.textContent?.trim() || '';
+    const annHref = annA?.getAttribute('href') || '';
+    const annIdM = annHref.match(/\/announce\/index\/(\d+)/);
+    const announceId = annIdM ? annIdM[1] : '';
+
+    // Заказчик — ищем после тега <strong>Заказчик:</strong>
+    const cell1 = cells[1];
+    let customer = '';
+    const strongs = cell1?.querySelectorAll('strong');
+    strongs?.forEach(s => {
+      if(s.textContent.includes('Заказчик')) {
+        let node = s.nextSibling;
+        while(node) {
+          if(node.nodeType === 3) customer += node.textContent;
+          else if(node.nodeName === 'A') customer += node.textContent;
+          node = node.nextSibling;
+        }
+      }
+    });
+    customer = customer.trim();
+
+    const lotA = cells[2]?.querySelector('a');
+    const lotName = lotA?.textContent?.trim() || '';
+    const lotHref = lotA?.getAttribute('href') || '';
+    const sumRaw = cells[4]?.textContent?.trim() || '';
+    const method = cells[5]?.textContent?.trim() || '';
+    const status = cells[6]?.textContent?.trim() || '';
+
+    items.push({
+      lot_num: lotNum,
+      announce_id: announceId,
+      announce_url: annHref ? (annHref.startsWith('http')?annHref:BASE+annHref) : '',
+      announce_name: annName,
+      lot_url: lotHref ? (lotHref.startsWith('http')?lotHref:BASE+lotHref) : '',
+      lot_name: lotName,
+      customer,
+      sum_raw: sumRaw,
+      method,
+      status,
+      winner_bin:'', winner_name:'', winner_sum:'', winner_status:'', contract_num:'',
+    });
+  });
+
+  const nextA = doc.querySelector("a[rel='next'], ul.pagination li.next:not(.disabled) a");
+  const nextHref = nextA?.getAttribute('href') || '';
+  const nextUrl = nextHref ? (nextHref.startsWith('http')?nextHref:BASE+nextHref) : null;
+
+  return { items, nextUrl };
+}
+
+// ── PARSE WINNERS from ?tab=contracts ────────────
+function parseWinners(html) {
+  const doc = parseDoc(html);
+  const results = [];
+  const tables = doc.querySelectorAll('table');
+
+  tables.forEach(tbl => {
+    const rows = [...tbl.querySelectorAll('tr')];
+    if(!rows.length) return;
+
+    // Найти строку заголовков
+    let hdrRow = null;
+    let hdrs = [];
+    for(const row of rows) {
+      const ths = row.querySelectorAll('th');
+      if(ths.length >= 4) {
+        hdrRow = row;
+        hdrs = [...ths].map(th => th.textContent.trim().toLowerCase());
+        break;
+      }
+    }
+    if(!hdrs.length) return;
+
+    // Индексы нужных колонок
+    const iContract = hdrs.findIndex(h => h.includes('номер договора'));
+    const iStatus   = hdrs.findIndex(h => h.includes('статус договора') || h.includes('статус победителя'));
+    const iPlan     = hdrs.findIndex(h => h.includes('плановая сумма'));
+    const iSum      = hdrs.findIndex(h => h.includes('сумма по предмету') || (h.includes('сумма') && !h.includes('плановая')));
+    const iName     = hdrs.findIndex(h => h.includes('наименование поставщика') || h.includes('поставщик'));
+    const iBin      = hdrs.findIndex(h => h.includes('бин') || h.includes('иин'));
+    const iWinSt    = hdrs.findIndex(h => h.includes('статус победителя'));
+
+    for(const row of rows) {
+      if(row === hdrRow) continue;
+      const tds = row.querySelectorAll('td');
+      if(tds.length < 4) continue;
+      const get = i => (i>=0 && tds[i]) ? tds[i].textContent.trim() : '';
+      const bin = get(iBin);
+      const name = get(iName);
+      if(!bin && !name) continue;
+      results.push({
+        contract_num: get(iContract),
+        bin,
+        name,
+        sum: get(iSum) || get(iPlan),
+        status: get(iWinSt) || get(iStatus),
+      });
+    }
+  });
+
+  return results;
+}
+
+// ── HELPERS ───────────────────────────────────────
+function buildUrl(base, page) {
+  try {
+    const u = new URL(base);
+    u.searchParams.set('per-page','50');
+    u.searchParams.set('page', page);
+    return u.toString();
+  } catch(e) {
+    return base + (base.includes('?')?'&':'?') + 'per-page=50&page='+page;
+  }
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+function setPhase(n) {
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById('ph'+i);
+    el.className='phase'+(i===n?' active':i<n?' done':'');
+  });
+}
+function setProg(label, cur, total) {
+  document.getElementById('prog-label').textContent = label;
+  document.getElementById('prog-count').textContent = cur+(total?' / '+total:'');
+  document.getElementById('pbar').style.width = (total?Math.min(100,cur/total*100):0)+'%';
+}
+
+// ── MAIN ──────────────────────────────────────────
+async function startParsing() {
+  if(running) return;
+  const baseUrl = document.getElementById('inp-url').value.trim();
+  if(!baseUrl.includes('goszakup.gov.kz')) {
+    showToast('❌ Введите корректный URL goszakup.gov.kz','err'); return;
+  }
+  const limit = parseInt(document.getElementById('inp-limit').value)||200;
+  const delayMs = parseFloat(document.getElementById('inp-delay').value)*1000||1500;
+  const concur = parseInt(document.getElementById('inp-concur').value)||3;
+  const doWinners = document.getElementById('chk-winners').checked;
+
+  running=true; stopFlag=false; records=[]; pagesFetched=0; winnersLoaded=0;
+
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-stop').disabled=false;
+  document.getElementById('btn-excel').disabled=true;
+  document.getElementById('prog-block').classList.add('active');
+  document.getElementById('stats-row').style.display='grid';
+  document.getElementById('tbl-wrap').classList.add('active');
+  document.getElementById('logbox').innerHTML='';
+  document.getElementById('tbody').innerHTML=
+    '<tr><td colspan="12" style="text-align:center;padding:24px"><span class="spin"></span> Загрузка...</td></tr>';
+
+  setPhase(1);
+  log('Старт. Лимит: '+limit+' лотов | Задержка: '+(delayMs/1000)+'с | Параллельно: '+concur,'log-info');
+
+  // ФАЗА 1: сбор лотов
+  let lots = [];
+  let page = 1;
+  try {
+    while(lots.length < limit && !stopFlag) {
+      const url = buildUrl(baseUrl, page);
+      setProg('Страница '+page+': сбор лотов', lots.length, limit);
+      log('Стр.'+page+': '+url.slice(0,75)+'...');
+      let html;
+      try {
+        html = await pfetch(url);
+      } catch(e) {
+        log('Ошибка стр.'+page+': '+e.message,'log-err');
+        if(page===1) {
+          showToast('❌ Нет связи. Убедитесь что запущен СТАРТ.bat','err');
+        }
+        break;
+      }
+      const {items, nextUrl} = parseLotsList(html);
+      pagesFetched++;
+      if(!items.length) { log('Пустая страница — данных больше нет','log-err'); break; }
+      const toAdd = items.slice(0, limit-lots.length);
+      lots.push(...toAdd);
+      log('Стр.'+page+': +'+toAdd.length+' лотов. Итого: '+lots.length,'log-ok');
+      updateStats(lots);
+      renderTable(lots);
+      if(!nextUrl || lots.length>=limit) break;
+      page++;
+      await delay(delayMs*0.5);
+    }
+  } catch(e) { log('Ошибка фазы 1: '+e.message,'log-err'); }
+
+  log('Фаза 1 завершена: '+lots.length+' лотов с '+pagesFetched+' страниц','log-info');
+
+  // ФАЗА 2: победители (параллельно)
+  if(doWinners && lots.length && !stopFlag) {
+    setPhase(2);
+    log('Загружаем победителей (параллельно по '+concur+')...','log-info');
+
+    for(let i=0; i<lots.length && !stopFlag; i+=concur) {
+      const batch = lots.slice(i, i+concur);
+      setProg('Победители: '+i+' / '+lots.length, i, lots.length);
+
+      await Promise.all(batch.map(async lot => {
+        if(!lot.announce_id) return;
+        try {
+          const url = BASE+'/ru/announce/index/'+lot.announce_id+'?tab=contracts';
+          const html = await pfetch(url);
+          const ws = parseWinners(html);
+          if(ws.length) {
+            const w = ws[0];
+            lot.winner_bin=w.bin; lot.winner_name=w.name;
+            lot.winner_sum=w.sum; lot.winner_status=w.status;
+            lot.contract_num=w.contract_num;
+            winnersLoaded++;
+            log('✓ '+lot.lot_num+' → '+(w.name||w.bin).slice(0,45),'log-ok');
+          } else {
+            log('— '+lot.lot_num+': нет победителей');
+          }
+        } catch(e) {
+          log('✗ '+lot.lot_num+': '+e.message,'log-err');
+        }
+      }));
+
+      updateStats(lots);
+      renderTable(lots);
+      if(!stopFlag) await delay(delayMs);
+    }
+  }
+
+  // ФИНАЛ
+  records = lots;
+  setPhase(stopFlag ? 2 : 3);
+  updateStats(records);
+  renderTable(records);
+  setProg(stopFlag?'Остановлено':'Готово!', records.length, records.length);
+
+  running=false; stopFlag=false;
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-stop').disabled=true;
+  if(records.length>0) document.getElementById('btn-excel').disabled=false;
+  document.getElementById('upd-time').textContent='Обновлено: '+new Date().toLocaleTimeString('ru');
+
+  if(records.length>0) {
+    showToast('✅ Готово: '+records.length+' лотов, '+winnersLoaded+' победителей','ok');
+    log('✅ Итог: '+records.length+' лотов, '+winnersLoaded+' с победителем','log-ok');
+  } else {
+    showToast('⚠ Данные не получены. Проверьте подключение.','err');
+  }
+}
+
+function stopParsing() {
+  stopFlag=true;
+  document.getElementById('btn-stop').disabled=true;
+  log('Остановка по запросу пользователя...','log-err');
+}
+
+// ── STATS & TABLE ─────────────────────────────────
+function updateStats(lots) {
+  document.getElementById('st-lots').textContent = lots.length;
+  const wl = lots.filter(l=>l.winner_bin);
+  document.getElementById('st-win').textContent = wl.length;
+  document.getElementById('st-bins').textContent = new Set(wl.map(l=>l.winner_bin)).size;
+  document.getElementById('st-pages').textContent = pagesFetched;
+  let total=0;
+  lots.forEach(r=>{
+    const n=parseFloat((r.winner_sum||r.sum_raw||'0').replace(/[\s]/g,'').replace(',','.'));
+    if(!isNaN(n)) total+=n;
+  });
+  document.getElementById('st-sum').textContent=(total/1e9).toFixed(2);
+  document.getElementById('tbl-sub').textContent=
+    lots.length+' лотов · '+wl.length+' с победителем · '+new Set(wl.map(l=>l.winner_bin)).size+' уникальных БИН';
+}
+
+function fmtN(s) {
+  if(!s) return '—';
+  const n=parseFloat(s.replace(/[\s,]/g,'').replace(',','.'));
+  if(isNaN(n)) return s;
+  return n.toLocaleString('ru')+'&nbsp;₸';
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function stTag(s){
+  if(!s) return 'tg-yellow';
+  const l=s.toLowerCase();
+  if(l.includes('состоялась')&&!l.includes('не')) return 'tg-green';
+  if(l.includes('не состоялась')||l.includes('отмен')) return 'tg-red';
+  return 'tg-blue';
+}
+
+let filteredData = [];
+function renderTable(lots) {
+  filteredData = lots;
+  applyFilter();
+}
+
+function filterTable() {
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = (document.getElementById('tbl-search')?.value||'').toLowerCase();
+  const data = q ? filteredData.filter(r =>
+    (r.lot_num+r.lot_name+r.announce_name+r.customer+r.winner_name+r.winner_bin+r.status)
+      .toLowerCase().includes(q)
+  ) : filteredData;
+
+  const tbody = document.getElementById('tbody');
+  if(!data.length) {
+    tbody.innerHTML='<tr><td colspan="12"><div class="empty">Ничего не найдено</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map((r,i)=>`
+    <tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td><div class="c-bin" style="font-size:11px">${esc(r.lot_num)}</div></td>
+      <td style="max-width:220px">
+        <div class="c-name">${esc((r.lot_name||r.announce_name||'—').slice(0,65))}</div>
+        ${r.lot_name&&r.announce_name?`<div class="c-sub">${esc(r.announce_name.slice(0,55))}</div>`:''}
+      </td>
+      <td style="max-width:180px"><div style="font-size:11px;color:var(--muted)">${esc((r.customer||'—').slice(0,80))}</div></td>
+      <td><div class="c-sum">${fmtN(r.sum_raw)}</div></td>
+      <td>
+        ${r.winner_bin
+          ?`<div class="c-wbin">${esc(r.winner_bin)}</div>${r.contract_num?`<div class="c-sub">${esc(r.contract_num)}</div>`:''}`
+          :'<span style="color:var(--muted);font-size:11px">—</span>'}
+      </td>
+      <td style="max-width:200px"><div class="c-name" style="font-size:12px">${esc((r.winner_name||'—').slice(0,60))}</div></td>
+      <td><div class="c-sum">${fmtN(r.winner_sum)}</div></td>
+      <td>${r.winner_status?`<span class="tag tg-green">${esc(r.winner_status.slice(0,22))}</span>`:'—'}</td>
+      <td><span class="tag tg-blue">${esc((r.method||'—').slice(0,24))}</span></td>
+      <td><span class="tag ${stTag(r.status)}">${esc((r.status||'—').slice(0,22))}</span></td>
+      <td style="white-space:nowrap">
+        ${r.lot_url?`<a class="lnk" href="${esc(r.lot_url)}" target="_blank">Лот↗</a> `:''}
+        ${r.announce_url?`<a class="lnk" href="${esc(r.announce_url)}" target="_blank">Объявл↗</a>`:''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── EXCEL ─────────────────────────────────────────
+function exportExcel() {
+  if(!records.length) return;
+  const wb = XLSX.utils.book_new();
+
+  // Лист 1: все данные
+  const rows1 = records.map((r,i)=>({
+    '№': i+1,
+    'Номер лота': r.lot_num||'',
+    'Наименование лота': r.lot_name||'',
+    'Объявление': r.announce_name||'',
+    'Заказчик': r.customer||'',
+    'Сумма лота, тг': (r.sum_raw||'').replace(/\s/g,''),
+    'Способ закупки': r.method||'',
+    'Статус лота': r.status||'',
+    'БИН победителя': r.winner_bin||'',
+    'Наименование победителя': r.winner_name||'',
+    'Сумма договора, тг': (r.winner_sum||'').replace(/\s/g,''),
+    'Статус победителя': r.winner_status||'',
+    'Номер договора': r.contract_num||'',
+    'Ссылка на объявление': r.announce_url||'',
+    'Ссылка на лот': r.lot_url||'',
+  }));
+  const ws1 = XLSX.utils.json_to_sheet(rows1);
+  ws1['!cols']=[{wch:4},{wch:20},{wch:45},{wch:45},{wch:40},{wch:18},{wch:30},{wch:22},{wch:16},{wch:45},{wch:18},{wch:22},{wch:22},{wch:55},{wch:55}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Все лоты');
+
+  // Лист 2: только победители
+  const winners = records.filter(r=>r.winner_bin);
+  if(winners.length) {
+    const rows2 = winners.map((r,i)=>({
+      '№': i+1,
+      'БИН победителя': r.winner_bin,
+      'Наименование победителя': r.winner_name||'',
+      'Наименование лота': r.lot_name||r.announce_name||'',
+      'Заказчик': r.customer||'',
+      'Сумма лота, тг': (r.sum_raw||'').replace(/\s/g,''),
+      'Сумма договора, тг': (r.winner_sum||'').replace(/\s/g,''),
+      'Статус победителя': r.winner_status||'',
+      'Номер договора': r.contract_num||'',
+      'Способ закупки': r.method||'',
+      'Статус лота': r.status||'',
+      'Ссылка на объявление': r.announce_url||'',
+    }));
+    const ws2 = XLSX.utils.json_to_sheet(rows2);
+    ws2['!cols']=[{wch:4},{wch:16},{wch:45},{wch:45},{wch:40},{wch:18},{wch:18},{wch:22},{wch:22},{wch:28},{wch:22},{wch:55}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Только победители');
+  }
+
+  // Лист 3: сводка
+  const bins = new Set(winners.map(r=>r.winner_bin));
+  const sumAll = records.reduce((s,r)=>{
+    const n=parseFloat((r.winner_sum||r.sum_raw||'').replace(/\s/g,''));
+    return s+(isNaN(n)?0:n);
+  },0);
+  const top5 = [...winners]
+    .sort((a,b)=>parseFloat((b.winner_sum||b.sum_raw||'0').replace(/\s/g,''))-parseFloat((a.winner_sum||a.sum_raw||'0').replace(/\s/g,'')))
+    .slice(0,5);
+  const aoa = [
+    ['ТендерСкан — Сводный отчёт',''],
+    ['Дата выгрузки', new Date().toLocaleString('ru')],
+    ['',''],
+    ['Всего лотов', records.length],
+    ['С победителем', winners.length],
+    ['Уникальных БИН победителей', bins.size],
+    ['Общая сумма, тг', sumAll.toLocaleString('ru')],
+    ['Страниц обработано', pagesFetched],
+    ['',''],
+    ['ТОП-5 победителей по сумме договора',''],
+    ...top5.map((r,i)=>[i+1+'. '+r.winner_name, parseFloat((r.winner_sum||r.sum_raw||'0').replace(/\s/g,''))||''])
+  ];
+  const ws3 = XLSX.utils.aoa_to_sheet(aoa);
+  ws3['!cols']=[{wch:35},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Сводка');
+
+  const dt=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'tenders_kostanay_'+dt+'.xlsx');
+  showToast('✅ Excel скачан! 3 листа: все лоты, победители, сводка','ok');
+}
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show '+(type==='ok'?'ok':type==='err'?'err':'');
+  setTimeout(()=>{t.className='toast';},5000);
+}
+</script>
+</body>
+</html>
