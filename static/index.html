@@ -322,17 +322,42 @@ function parseLotsList(html) {
       method,
       status,
       winner_bin:'', winner_name:'', winner_sum:'', winner_status:'', contract_num:'',
+      second_bin:'', second_name:'', second_sum:'', second_status:'', second_contract:'',
     });
   });
 
-  const nextA = doc.querySelector("a[rel='next'], ul.pagination li.next:not(.disabled) a");
-  const nextHref = nextA?.getAttribute('href') || '';
+  // Пробуем все возможные варианты кнопки "следующая страница"
+  const nextSelectors = [
+    "a[rel='next']",
+    "ul.pagination li.next:not(.disabled) a",
+    "ul.pagination li:not(.disabled) a[aria-label='Next']",
+    ".pagination .next a",
+    "li.next a",
+    "a.next",
+    // Ищем ссылку с номером следующей страницы в пагинации
+  ];
+  let nextHref = '';
+  for(const sel of nextSelectors) {
+    const el = doc.querySelector(sel);
+    if(el) { nextHref = el.getAttribute('href') || ''; if(nextHref) break; }
+  }
+  // Если не нашли rel=next — ищем активную страницу и берём следующую
+  if(!nextHref) {
+    const activePage = doc.querySelector('ul.pagination li.active, .pagination .active');
+    if(activePage) {
+      const nextLi = activePage.nextElementSibling;
+      if(nextLi && !nextLi.classList.contains('disabled')) {
+        const a = nextLi.querySelector('a');
+        if(a) nextHref = a.getAttribute('href') || '';
+      }
+    }
+  }
   const nextUrl = nextHref ? (nextHref.startsWith('http')?nextHref:BASE+nextHref) : null;
 
   return { items, nextUrl };
 }
 
-// ── PARSE WINNERS from ?tab=contracts ────────────
+// ── PARSE WINNERS from ?tab=winners ────────────
 function parseWinners(html) {
   const doc = parseDoc(html);
   const results = [];
@@ -343,8 +368,8 @@ function parseWinners(html) {
     if(!rows.length) return;
 
     // Найти строку заголовков
-    let hdrRow = null;
     let hdrs = [];
+    let hdrRow = null;
     for(const row of rows) {
       const ths = row.querySelectorAll('th');
       if(ths.length >= 4) {
@@ -355,29 +380,53 @@ function parseWinners(html) {
     }
     if(!hdrs.length) return;
 
-    // Индексы нужных колонок
-    const iContract = hdrs.findIndex(h => h.includes('номер договора'));
-    const iStatus   = hdrs.findIndex(h => h.includes('статус договора') || h.includes('статус победителя'));
-    const iPlan     = hdrs.findIndex(h => h.includes('плановая сумма'));
-    const iSum      = hdrs.findIndex(h => h.includes('сумма по предмету') || (h.includes('сумма') && !h.includes('плановая')));
-    const iName     = hdrs.findIndex(h => h.includes('наименование поставщика') || h.includes('поставщик'));
-    const iBin      = hdrs.findIndex(h => h.includes('бин') || h.includes('иин'));
-    const iWinSt    = hdrs.findIndex(h => h.includes('статус победителя'));
+    // Индексы колонок
+    // "Победитель" — не содержит "второе"
+    const iWinner = hdrs.findIndex(h => h.includes('победитель') && !h.includes('второе'));
+    // "Поставщик, занявший второе место"
+    const iSecond = hdrs.findIndex(h => h.includes('второе') || (h.includes('поставщик') && !h.includes('победитель')));
+    const iSum    = hdrs.findIndex(h => h.includes('сумма'));
+    const iStatus = hdrs.findIndex(h => h.includes('статус'));
+    const iLotNum = hdrs.findIndex(h => h.includes('номер'));
 
     for(const row of rows) {
       if(row === hdrRow) continue;
       const tds = row.querySelectorAll('td');
       if(tds.length < 4) continue;
-      const get = i => (i>=0 && tds[i]) ? tds[i].textContent.trim() : '';
-      const bin = get(iBin);
-      const name = get(iName);
-      if(!bin && !name) continue;
+
+      const get = i => (i >= 0 && tds[i]) ? tds[i].textContent.trim() : '';
+
+      // БИН и название идут в тексте ячейки как: "111240007554 Название компании"
+      // БИН — первые 12 цифр, остальное — название
+      function extractBinName(cellIdx) {
+        if(cellIdx < 0 || !tds[cellIdx]) return {bin:'', name:''};
+        const text = tds[cellIdx].textContent.trim();
+        // Ищем 12-значный БИН в начале строки
+        const m = text.match(/^(\d{12})\s+([\s\S]+)$/);
+        if(m) return { bin: m[1], name: m[2].trim() };
+        // Или берём БИН из href ссылки (/ru/company/BIN)
+        const a = tds[cellIdx].querySelector('a');
+        if(a) {
+          const href = a.getAttribute('href') || '';
+          const hm = href.match(/\/(\d{12})(?:\/|$)/);
+          if(hm) return { bin: hm[1], name: a.textContent.replace(hm[1],'').trim() };
+        }
+        return { bin: '', name: text };
+      }
+
+      const w = extractBinName(iWinner);
+      const s = extractBinName(iSecond);
+
+      if(!w.bin && !w.name) continue;
+
       results.push({
-        contract_num: get(iContract),
-        bin,
-        name,
-        sum: get(iSum) || get(iPlan),
-        status: get(iWinSt) || get(iStatus),
+        lot_num:     get(iLotNum),
+        sum:         get(iSum),
+        lot_status:  get(iStatus),
+        winner_bin:  w.bin,
+        winner_name: w.name,
+        second_bin:  s.bin,
+        second_name: s.name,
       });
     }
   });
@@ -389,11 +438,16 @@ function parseWinners(html) {
 function buildUrl(base, page) {
   try {
     const u = new URL(base);
-    u.searchParams.set('per-page','50');
+    // Убираем page и per-page из исходного URL — будем ставить свои
+    u.searchParams.delete('page');
+    u.searchParams.delete('per-page');
+    u.searchParams.set('per-page', '50');
     u.searchParams.set('page', page);
     return u.toString();
   } catch(e) {
-    return base + (base.includes('?')?'&':'?') + 'per-page=50&page='+page;
+    // Fallback: вырезаем старые page/per-page и добавляем свои
+    let b = base.replace(/[&?]per-page=[^&]*/g,'').replace(/[&?]page=[^&]*/g,'');
+    return b + (b.includes('?')?'&':'?') + 'per-page=50&page='+page;
   }
 }
 
@@ -440,7 +494,14 @@ async function startParsing() {
 
   // ФАЗА 1: сбор лотов
   let lots = [];
-  let page = 1;
+  // Берём стартовую страницу из вставленной ссылки (если указана)
+  let startPage = 1;
+  try {
+    const u = new URL(baseUrl);
+    const p = parseInt(u.searchParams.get('page') || '1');
+    if(p > 1) { startPage = p; log('Старт с страницы '+p+' (из вставленной ссылки)','log-info'); }
+  } catch(e) {}
+  let page = startPage;
   try {
     while(lots.length < limit && !stopFlag) {
       const url = buildUrl(baseUrl, page);
@@ -456,6 +517,7 @@ async function startParsing() {
         }
         break;
       }
+      log('Стр.'+page+' загружена ('+Math.round(html.length/1024)+'кб)');
       const {items, nextUrl} = parseLotsList(html);
       pagesFetched++;
       if(!items.length) { log('Пустая страница — данных больше нет','log-err'); break; }
@@ -464,9 +526,21 @@ async function startParsing() {
       log('Стр.'+page+': +'+toAdd.length+' лотов. Итого: '+lots.length,'log-ok');
       updateStats(lots);
       renderTable(lots);
-      if(!nextUrl || lots.length>=limit) break;
-      page++;
-      await delay(delayMs*0.5);
+      if(lots.length>=limit) break;
+      // Если сайт вернул ссылку на следующую — используем её, иначе сами инкрементируем page
+      if(nextUrl) {
+        // Обновляем baseUrl для следующих страниц (сохраняем все фильтры из живой ссылки)
+        page++;
+        await delay(delayMs*0.5);
+      } else if(items.length === 50) {
+        // Страница полная — вероятно есть следующая, пробуем сами
+        log('Кнопка "след.страница" не найдена — пробуем page='+(page+1),'log-info');
+        page++;
+        await delay(delayMs*0.5);
+      } else {
+        log('Последняя страница ('+items.length+' записей < 50)','log-info');
+        break;
+      }
     }
   } catch(e) { log('Ошибка фазы 1: '+e.message,'log-err'); }
 
@@ -484,16 +558,30 @@ async function startParsing() {
       await Promise.all(batch.map(async lot => {
         if(!lot.announce_id) return;
         try {
-          const url = BASE+'/ru/announce/index/'+lot.announce_id+'?tab=contracts';
+          const url = BASE+'/ru/announce/index/'+lot.announce_id+'?tab=winners';
           const html = await pfetch(url);
           const ws = parseWinners(html);
           if(ws.length) {
-            const w = ws[0];
-            lot.winner_bin=w.bin; lot.winner_name=w.name;
-            lot.winner_sum=w.sum; lot.winner_status=w.status;
-            lot.contract_num=w.contract_num;
-            winnersLoaded++;
-            log('✓ '+lot.lot_num+' → '+(w.name||w.bin).slice(0,45),'log-ok');
+            // ws[i] = одна строка таблицы = один лот
+            // Ищем строку соответствующую нашему лоту (или берём первую)
+            const w = ws.find(x => x.lot_num && lot.lot_num && x.lot_num.includes(lot.lot_num.split('-')[0])) || ws[0];
+            if(w.winner_bin || w.winner_name) {
+              lot.winner_bin    = w.winner_bin;
+              lot.winner_name   = w.winner_name;
+              lot.winner_sum    = w.sum || '';
+              lot.winner_status = w.lot_status || '';
+              lot.contract_num  = '';
+              winnersLoaded++;
+              log('✓ '+lot.lot_num+' победитель: '+(w.winner_name||w.winner_bin).slice(0,40),'log-ok');
+            }
+            if(w.second_bin || w.second_name) {
+              lot.second_bin    = w.second_bin;
+              lot.second_name   = w.second_name;
+              lot.second_sum    = w.sum || '';
+              lot.second_status = '2-е место';
+              lot.second_contract = '';
+              log('  2-е место: '+(w.second_name||w.second_bin).slice(0,40));
+            }
           } else {
             log('— '+lot.lot_num+': нет победителей');
           }
@@ -618,6 +706,30 @@ function applyFilter() {
 }
 
 // ── EXCEL ─────────────────────────────────────────
+// Парсим строку суммы в число
+function toNum(s) {
+  if(!s) return '';
+  const n = parseFloat((s+'').replace(/\s/g,'').replace(',','.'));
+  return isNaN(n) ? '' : n;
+}
+
+// Применяем числовой формат с разделителем разрядов к колонкам листа
+// colIndices — массив индексов колонок (0-based), начиная со строки данных (пропускаем заголовок)
+function applyNumFmt(ws, colIndices) {
+  if(!ws['!ref']) return;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const fmt = '# ##0.00'; // пробел как разделитель тысяч (русский стиль)
+  colIndices.forEach(c => {
+    for(let r = range.s.r + 1; r <= range.e.r; r++) {
+      const addr = XLSX.utils.encode_cell({r, c});
+      const cell = ws[addr];
+      if(cell && cell.v !== '' && cell.v !== undefined) {
+        cell.t = 'n';   // тип — число
+        cell.z = fmt;   // формат отображения
+      }
+    }
+  });
+}
 function exportExcel() {
   if(!records.length) return;
   const wb = XLSX.utils.book_new();
@@ -629,12 +741,12 @@ function exportExcel() {
     'Наименование лота': r.lot_name||'',
     'Объявление': r.announce_name||'',
     'Заказчик': r.customer||'',
-    'Сумма лота, тг': (r.sum_raw||'').replace(/\s/g,''),
+    'Сумма лота, тг': toNum(r.sum_raw),
     'Способ закупки': r.method||'',
     'Статус лота': r.status||'',
     'БИН победителя': r.winner_bin||'',
     'Наименование победителя': r.winner_name||'',
-    'Сумма договора, тг': (r.winner_sum||'').replace(/\s/g,''),
+    'Сумма договора, тг': toNum(r.winner_sum),
     'Статус победителя': r.winner_status||'',
     'Номер договора': r.contract_num||'',
     'Ссылка на объявление': r.announce_url||'',
@@ -642,6 +754,7 @@ function exportExcel() {
   }));
   const ws1 = XLSX.utils.json_to_sheet(rows1);
   ws1['!cols']=[{wch:4},{wch:20},{wch:45},{wch:45},{wch:40},{wch:18},{wch:30},{wch:22},{wch:16},{wch:45},{wch:18},{wch:22},{wch:22},{wch:55},{wch:55}];
+  applyNumFmt(ws1, [5, 10]); // колонки F и K — суммы
   XLSX.utils.book_append_sheet(wb, ws1, 'Все лоты');
 
   // Лист 2: только победители
@@ -653,8 +766,8 @@ function exportExcel() {
       'Наименование победителя': r.winner_name||'',
       'Наименование лота': r.lot_name||r.announce_name||'',
       'Заказчик': r.customer||'',
-      'Сумма лота, тг': (r.sum_raw||'').replace(/\s/g,''),
-      'Сумма договора, тг': (r.winner_sum||'').replace(/\s/g,''),
+      'Сумма лота, тг': toNum(r.sum_raw),
+      'Сумма договора, тг': toNum(r.winner_sum),
       'Статус победителя': r.winner_status||'',
       'Номер договора': r.contract_num||'',
       'Способ закупки': r.method||'',
@@ -663,10 +776,31 @@ function exportExcel() {
     }));
     const ws2 = XLSX.utils.json_to_sheet(rows2);
     ws2['!cols']=[{wch:4},{wch:16},{wch:45},{wch:45},{wch:40},{wch:18},{wch:18},{wch:22},{wch:22},{wch:28},{wch:22},{wch:55}];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Только победители');
+    applyNumFmt(ws2, [5, 6]); // колонки F и G — суммы
+    XLSX.utils.book_append_sheet(wb, ws2, 'Победители (1-е место)');
   }
 
-  // Лист 3: сводка
+  // Лист 3: поставщики занявшие 2-е место
+  const seconds = records.filter(r => r.second_bin || r.second_name);
+  if(seconds.length) {
+    const rows3 = seconds.map((r,i) => ({
+      '№': i+1,
+      'БИН (2-е место)':          r.second_bin || '',
+      'Поставщик (2-е место)':     r.second_name || '',
+      'Наименование лота':         r.lot_name || r.announce_name || '',
+      'Заказчик':                  r.customer || '',
+      'Плановая сумма лота, тг':   toNum(r.sum_raw),
+      'Способ закупки':            r.method || '',
+      'Статус лота':               r.status || '',
+      'Ссылка на объявление':      r.announce_url || '',
+    }));
+    const ws3 = XLSX.utils.json_to_sheet(rows3);
+    ws3['!cols'] = [{wch:4},{wch:16},{wch:45},{wch:45},{wch:40},{wch:20},{wch:30},{wch:22},{wch:55}];
+    applyNumFmt(ws3, [5]); // колонка F — сумма
+    XLSX.utils.book_append_sheet(wb, ws3, 'Поставщики 2-е место');
+  }
+
+  // Лист 4: сводка
   const bins = new Set(winners.map(r=>r.winner_bin));
   const sumAll = records.reduce((s,r)=>{
     const n=parseFloat((r.winner_sum||r.sum_raw||'').replace(/\s/g,''));
@@ -680,7 +814,8 @@ function exportExcel() {
     ['Дата выгрузки', new Date().toLocaleString('ru')],
     ['',''],
     ['Всего лотов', records.length],
-    ['С победителем', winners.length],
+    ['С победителем (1-е место)', winners.length],
+    ['С данными 2-го места', records.filter(r=>r.second_bin).length],
     ['Уникальных БИН победителей', bins.size],
     ['Общая сумма, тг', sumAll.toLocaleString('ru')],
     ['Страниц обработано', pagesFetched],
@@ -688,9 +823,9 @@ function exportExcel() {
     ['ТОП-5 победителей по сумме договора',''],
     ...top5.map((r,i)=>[i+1+'. '+r.winner_name, parseFloat((r.winner_sum||r.sum_raw||'0').replace(/\s/g,''))||''])
   ];
-  const ws3 = XLSX.utils.aoa_to_sheet(aoa);
-  ws3['!cols']=[{wch:35},{wch:30}];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Сводка');
+  const ws4 = XLSX.utils.aoa_to_sheet(aoa);
+  ws4['!cols']=[{wch:35},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Сводка');
 
   const dt=new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb,'tenders_kostanay_'+dt+'.xlsx');
